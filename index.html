@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#0b1118">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Стендовая стрельба — серия</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: Inter, Arial, sans-serif;
+    background:
+      radial-gradient(circle at 20% 10%, #263b55 0, transparent 35%),
+      radial-gradient(circle at 90% 90%, #173d31 0, transparent 35%),
+      #0b1118;
+    color: #f5f7fa;
+    display: flex;
+    justify-content: center;
+    padding: 28px 16px;
+  }
+  .app { width: min(980px, 100%); }
+  .card {
+    background: rgba(17, 25, 35, .92);
+    border: 1px solid #2b3949;
+    border-radius: 22px;
+    box-shadow: 0 18px 60px rgba(0,0,0,.35);
+    overflow: hidden;
+  }
+  header {
+    padding: 28px 30px;
+    border-bottom: 1px solid #2b3949;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+  }
+  h1 { margin: 0 0 7px; font-size: 28px; }
+  .sub { color: #91a0b2; font-size: 14px; }
+  .badge {
+    padding: 9px 13px;
+    border-radius: 999px;
+    background: #172231;
+    border: 1px solid #314155;
+    color: #b9c8d9;
+    white-space: nowrap;
+  }
+  .setup { padding: 28px 30px 34px; }
+  .setup h2 { margin-top: 0; }
+  .names {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 18px 0 22px;
+  }
+  input {
+    width: 100%;
+    padding: 14px 15px;
+    border-radius: 12px;
+    border: 1px solid #334356;
+    background: #0e1620;
+    color: white;
+    outline: none;
+    font-size: 15px;
+  }
+  input:focus { border-color: #6ea8fe; box-shadow: 0 0 0 3px rgba(110,168,254,.12); }
+  button {
+    border: 0;
+    border-radius: 12px;
+    padding: 14px 18px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: .15s;
+  }
+  button:hover { transform: translateY(-1px); }
+  .primary { background: #e7eef7; color: #101722; }
+  .secondary { background: #1b2837; color: #d9e2ec; border: 1px solid #35475c; }
+  .danger { background: #39212a; color: #ffb7c7; border: 1px solid #673543; }
+  .shoot { display: none; }
+  .top {
+    padding: 22px 30px 18px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #2b3949;
+  }
+  .shooter {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .avatar {
+    width: 48px; height: 48px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: #223349; color: #cfe2ff; font-weight: 800;
+  }
+  .shooter-name { font-size: 21px; font-weight: 800; }
+  .shooter-meta { color: #8f9eaf; font-size: 13px; margin-top: 3px; }
+  .station {
+    text-align: center;
+    padding: 30px;
+  }
+  .station-number {
+    font-size: 92px;
+    line-height: .95;
+    font-weight: 900;
+    letter-spacing: -5px;
+  }
+  .station-label { color: #8f9eaf; margin-top: 8px; }
+  .sequence {
+    margin: 26px auto;
+    max-width: 700px;
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+  .step {
+    min-width: 43px;
+    height: 43px;
+    padding: 0 10px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: #172231;
+    border: 1px solid #2c3c50;
+    color: #718095;
+    font-weight: 800;
+  }
+  .step.current { background: #dce9f8; color: #101722; border-color: #dce9f8; }
+  .step.done { background: #173b2c; color: #75e0a6; border-color: #285d44; }
+  .shot-text {
+    font-size: 19px;
+    font-weight: 700;
+    margin: 18px 0 7px;
+  }
+  .shot-hint { color: #8796a8; font-size: 14px; }
+
+  .shooters-board {
+    max-width: 760px;
+    margin: 24px auto 4px;
+    background: #101923;
+    border: 1px solid #29394b;
+    border-radius: 16px;
+    overflow: hidden;
+    text-align: left;
+  }
+  .board-title {
+    padding: 13px 16px;
+    color: #91a0b2;
+    font-size: 13px;
+    border-bottom: 1px solid #29394b;
+  }
+  .board-row {
+    display: grid;
+    grid-template-columns: minmax(150px, 1fr) repeat(var(--shot-count), 54px);
+    align-items: center;
+    min-height: 58px;
+    padding: 0 14px;
+    gap: 8px;
+    border-bottom: 1px solid #202d3b;
+  }
+  .board-row:last-child { border-bottom: 0; }
+  .board-row.current { background: #172535; }
+  .board-name { font-weight: 800; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .board-name small { color: #7f8ea0; font-weight: 600; margin-right: 7px; }
+  .shot-cell {
+    width: 42px; height: 42px;
+    border-radius: 11px;
+    display: grid; place-items: center;
+    background: #182331;
+    border: 1px solid #2c3c50;
+    color: #66778a;
+    font-size: 20px;
+    font-weight: 900;
+  }
+  .shot-cell.hit { background: #174c32; border-color: #2b8a59; color: #5ee39a; }
+  .shot-cell.miss { background: #54252e; border-color: #9c4555; color: #ff7087; }
+  .shot-cell.active { box-shadow: 0 0 0 2px #dce9f8 inset; }
+  .shot-legend {
+    display: flex; gap: 14px; padding: 10px 16px; color: #8493a5; font-size: 12px;
+    border-top: 1px solid #29394b;
+  }
+  .legend-hit { color: #5ee39a; }
+  .legend-miss { color: #ff7087; }
+  .controls {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    padding: 0 30px 30px;
+  }
+  .hit { background: #23844f; color: white; font-size: 17px; padding: 18px; }
+  .miss { background: #8b3340; color: white; font-size: 17px; padding: 18px; }
+  .back { grid-column: 1 / -1; }
+  .progress-wrap { padding: 0 30px 28px; }
+  .progress-head { display: flex; justify-content: space-between; color: #91a0b2; font-size: 13px; margin-bottom: 8px; }
+  .bar { height: 8px; background: #182331; border-radius: 999px; overflow: hidden; }
+  .bar > div { height: 100%; background: #72a8e8; width: 0%; transition: .2s; }
+  .result { display: none; padding: 35px 30px; text-align: center; }
+  .result h2 { margin: 0 0 10px; font-size: 30px; }
+  .score { font-size: 58px; font-weight: 900; margin: 15px 0; }
+  .summary {
+    max-width: 650px; margin: 22px auto; text-align: left;
+    display: grid; grid-template-columns: repeat(2,1fr); gap: 10px;
+  }
+  .summary div {
+    background: #121c27; border: 1px solid #29394b;
+    padding: 12px 14px; border-radius: 10px;
+    display: flex; justify-content: space-between;
+  }
+  @media (max-width: 650px) {
+    body {
+      padding: 0;
+      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    .app { width: 100%; }
+    .card {
+      min-height: 100dvh;
+      border: 0;
+      border-radius: 0;
+      box-shadow: none;
+    }
+    header {
+      padding: 16px 14px;
+      gap: 10px;
+      align-items: flex-start;
+      flex-direction: column;
+    }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .sub { font-size: 12px; line-height: 1.35; }
+    .badge { padding: 7px 10px; font-size: 12px; }
+
+    .setup { padding: 18px 14px 24px; }
+    .setup h2 { font-size: 21px; }
+    .names {
+      grid-template-columns: 1fr;
+      gap: 9px;
+      margin: 14px 0 16px;
+    }
+    input {
+      min-height: 50px;
+      font-size: 16px;
+      padding: 13px 14px;
+    }
+    button {
+      min-height: 52px;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .setup .primary { width: 100%; }
+
+    .top {
+      padding: 12px 14px;
+      gap: 10px;
+    }
+    .shooter { gap: 10px; }
+    .avatar { width: 42px; height: 42px; }
+    .shooter-name { font-size: 17px; }
+    .shooter-meta { font-size: 11px; }
+    .top .secondary {
+      min-height: 42px;
+      padding: 9px 11px;
+      font-size: 12px;
+    }
+
+    .station { padding: 16px 10px 8px; }
+    .station-number { font-size: 64px; letter-spacing: -3px; }
+    .station-label { font-size: 11px; margin-top: 3px; }
+    .sequence {
+      margin: 14px auto 10px;
+      gap: 5px;
+      max-width: 100%;
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      justify-content: flex-start;
+      padding: 2px 3px 5px;
+      -webkit-overflow-scrolling: touch;
+    }
+    .step {
+      min-width: 34px;
+      width: 34px;
+      height: 34px;
+      padding: 0;
+      border-radius: 9px;
+      font-size: 13px;
+    }
+    .shot-text { font-size: 16px; margin: 10px 0 4px; }
+    .shot-hint { font-size: 11px; }
+
+    .shooters-board {
+      width: 100%;
+      margin: 12px auto 2px;
+      border-radius: 13px;
+      overflow: hidden;
+    }
+    .board-title {
+      padding: 10px 11px;
+      font-size: 11px;
+    }
+    .board-row {
+      grid-template-columns: minmax(0, 1fr) repeat(var(--shot-count), 38px);
+      min-height: 50px;
+      padding: 0 8px;
+      gap: 5px;
+    }
+    .board-name { font-size: 13px; min-width: 0; }
+    .board-name small { margin-right: 5px; font-size: 10px; }
+    .shot-cell {
+      width: 34px;
+      height: 34px;
+      border-radius: 9px;
+      font-size: 18px;
+    }
+    .shot-legend {
+      gap: 8px;
+      padding: 8px 10px;
+      font-size: 10px;
+      flex-wrap: wrap;
+    }
+
+    .progress-wrap { padding: 8px 14px 12px; }
+    .progress-head { font-size: 11px; margin-bottom: 6px; }
+    .bar { height: 7px; }
+
+    .controls {
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      padding: 0 14px 14px;
+      position: sticky;
+      bottom: 0;
+      z-index: 10;
+      background: rgba(11,17,24,.96);
+      padding-top: 8px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom));
+      backdrop-filter: blur(8px);
+    }
+    .hit, .miss {
+      min-height: 58px;
+      font-size: 16px;
+      padding: 12px 8px;
+    }
+    .back {
+      min-height: 44px;
+      font-size: 13px;
+    }
+
+    .result { padding: 25px 14px; }
+    .result h2 { font-size: 25px; }
+    .score { font-size: 48px; }
+    .summary { grid-template-columns: 1fr; margin: 16px auto; }
+  }
+
+  @media (max-width: 380px) {
+    .board-row { grid-template-columns: minmax(0, 1fr) repeat(var(--shot-count), 34px); gap: 3px; padding: 0 6px; }
+    .shot-cell { width: 31px; height: 31px; font-size: 16px; }
+    .board-name { font-size: 12px; }
+    .hit, .miss { font-size: 15px; }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="card">
+    <header>
+      <div>
+        <h1>Стендовая стрельба</h1>
+        <div class="sub">Серия на 7 стрелков · 1 → 2 → 3 → 4 → 5 → 6 → 7 → 4 → 8</div>
+      </div>
+      <div class="badge" id="modeBadge">Настройка серии</div>
+    </header>
+
+    <section class="setup" id="setup">
+      <h2>Участники</h2>
+      <div class="sub">Введи от 1 до 7 человек. После запуска все стрелки проходят серию вместе: на каждой станции стреляет 1-й, затем 2-й, 3-й и так далее.</div>
+      <div class="names" id="names"></div>
+      <button class="primary" onclick="startSeries()">Начать серию</button>
+    </section>
+
+    <section class="shoot" id="shoot">
+      <div class="top">
+        <div class="shooter">
+          <div class="avatar" id="avatar">1</div>
+          <div>
+            <div class="shooter-name" id="shooterName"></div>
+            <div class="shooter-meta" id="shooterMeta"></div>
+          </div>
+        </div>
+        <button class="secondary" onclick="restart()">Новая серия</button>
+      </div>
+
+      <div class="station">
+        <div class="station-number" id="stationNumber">1</div>
+        <div class="station-label">НОМЕР</div>
+        <div class="sequence" id="sequence"></div>
+        <div class="shot-text" id="shotText"></div>
+        <div class="shot-hint" id="shotHint"></div>
+        <div class="shooters-board" id="shootersBoard"></div>
+      </div>
+
+      <div class="progress-wrap">
+        <div class="progress-head">
+          <span id="progressText">Выстрел 1 из 20</span>
+          <span id="overallText">0%</span>
+        </div>
+        <div class="bar"><div id="bar"></div></div>
+      </div>
+
+      <div class="controls">
+        <button class="hit" onclick="registerShot(true)">✓ Попал</button>
+        <button class="miss" onclick="registerShot(false)">✕ Не попал</button>
+        <button class="secondary back" onclick="undo()">↶ Назад на одно действие</button>
+      </div>
+    </section>
+
+    <section class="result" id="result">
+      <h2>Серия завершена</h2>
+      <div class="sub" id="resultSub"></div>
+      <div class="score" id="score"></div>
+      <div class="summary" id="summary"></div>
+      <button class="primary" onclick="restart()">Начать новую серию</button>
+    </section>
+  </div>
+</div>
+
+<script>
+const stationPlan = [
+  { station: 1, shots: ['Одиночный выстрел', 'Дуплет — выстрел 1', 'Дуплет — выстрел 2'] },
+  { station: 2, shots: ['Одиночный выстрел', 'Дуплет — выстрел 1', 'Дуплет — выстрел 2'] },
+  { station: 3, shots: ['Одиночный выстрел', 'Дуплет — выстрел 1', 'Дуплет — выстрел 2'] },
+  { station: 4, shots: ['Одиночный выстрел 1', 'Одиночный выстрел 2'] },
+  { station: 5, shots: ['Одиночный выстрел', 'Дуплет — выстрел 1', 'Дуплет — выстрел 2'] },
+  { station: 6, shots: ['Одиночный выстрел', 'Дуплет — выстрел 1', 'Дуплет — выстрел 2'] },
+  { station: 7, shots: ['Дуплет — выстрел 1', 'Дуплет — выстрел 2'] },
+  { station: 4, shots: ['Дуплет 1 — выстрел 1', 'Дуплет 1 — выстрел 2', 'Дуплет 2 — выстрел 1', 'Дуплет 2 — выстрел 2'] },
+  { station: 8, shots: ['Одиночный выстрел 1', 'Одиночный выстрел 2'] }
+];
+
+const totalShots = stationPlan.reduce((sum, x) => sum + x.shots.length, 0);
+let shooters = [];
+let shooterIndex = 0;
+let stationIndex = 0;
+let shotIndex = 0;
+let history = [];
+let results = [];
+
+const namesBox = document.getElementById('names');
+for (let i = 0; i < 7; i++) {
+  const input = document.createElement('input');
+  input.placeholder = `Стрелок ${i + 1}${i === 0 ? ' (обязательно)' : ''}`;
+  input.id = 'name' + i;
+  namesBox.appendChild(input);
+}
+
+function startSeries() {
+  shooters = [];
+  for (let i = 0; i < 7; i++) {
+    const value = document.getElementById('name' + i).value.trim();
+    if (value) shooters.push(value);
+  }
+  if (!shooters.length) {
+    alert('Введи хотя бы одного стрелка.');
+    return;
+  }
+  shooterIndex = 0;
+  stationIndex = 0;
+  shotIndex = 0;
+  history = [];
+  results = shooters.map(name => ({name, hit: 0, miss: 0, shots: 0, marks: {}}));
+  document.getElementById('setup').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('shoot').style.display = 'block';
+  document.getElementById('modeBadge').textContent = 'Идёт серия';
+  render();
+}
+
+function render() {
+  const plan = stationPlan[stationIndex];
+  const name = shooters[shooterIndex];
+  const shot = plan.shots[shotIndex];
+
+  document.getElementById('shooterName').textContent = name;
+  document.getElementById('shooterMeta').textContent =
+    `Стрелок ${shooterIndex + 1} из ${shooters.length}`;
+  document.getElementById('avatar').textContent = shooterIndex + 1;
+  document.getElementById('stationNumber').textContent = plan.station;
+  document.getElementById('shotText').textContent = shot;
+
+  if (shot.includes('Дуплет')) {
+    document.getElementById('shotHint').textContent =
+      shot.includes('1 —') ? 'Два выстрела подряд' : 'Следующий выстрел этой последовательности';
+  } else {
+    document.getElementById('shotHint').textContent = 'Одиночный выстрел';
+  }
+
+  renderShootersBoard(plan);
+
+  const seq = document.getElementById('sequence');
+  seq.innerHTML = '';
+  stationPlan.forEach((p, i) => {
+    const el = document.createElement('div');
+    el.className = 'step ' + (i < stationIndex ? 'done' : i === stationIndex ? 'current' : '');
+    el.textContent = p.station;
+    seq.appendChild(el);
+  });
+
+  const shotsPerStation = stationPlan[stationIndex].shots.length;
+  const shotsBeforeStation = stationPlan.slice(0, stationIndex).reduce((s,p) => s+p.shots.length, 0);
+  const currentNumber = shotsBeforeStation * shooters.length + shooterIndex * shotsPerStation + shotIndex + 1;
+  const totalGroupShots = totalShots * shooters.length;
+  document.getElementById('progressText').textContent = `Выстрел ${currentNumber} из ${totalGroupShots}`;
+  const pct = Math.round(((currentNumber - 1) / totalGroupShots) * 100);
+  document.getElementById('overallText').textContent = pct + '%';
+  document.getElementById('bar').style.width = pct + '%';
+}
+
+function renderShootersBoard(plan) {
+  const board = document.getElementById('shootersBoard');
+  board.style.setProperty('--shot-count', plan.shots.length);
+
+  let html = `<div class="board-title">Все стрелки на станции №${plan.station}</div>`;
+  shooters.forEach((name, i) => {
+    const current = i === shooterIndex ? ' current' : '';
+    html += `<div class="board-row${current}" style="--shot-count:${plan.shots.length}">`;
+    html += `<div class="board-name"><small>${i + 1}</small>${escapeHtml(name)}</div>`;
+    plan.shots.forEach((_, j) => {
+      const key = `${stationIndex}-${j}`;
+      const mark = results[i]?.marks?.[key];
+      const cls = mark === true ? 'hit' : mark === false ? 'miss' : '';
+      const icon = mark === true ? '✓' : mark === false ? '✕' : '—';
+      const active = i === shooterIndex && j === shotIndex ? ' active' : '';
+      html += `<div class="shot-cell ${cls}${active}">${icon}</div>`;
+    });
+    html += `</div>`;
+  });
+  html += `<div class="shot-legend"><span class="legend-hit">✓ Попал</span><span class="legend-miss">✕ Не попал</span><span>— ещё не стрелял</span></div>`;
+  board.innerHTML = html;
+}
+
+function registerShot(hit) {
+  history.push({ shooterIndex, stationIndex, shotIndex, hit });
+  const r = results[shooterIndex];
+  r.shots++;
+  if (hit) r.hit++; else r.miss++;
+  r.marks[`${stationIndex}-${shotIndex}`] = hit;
+
+  // Сначала стрелок заканчивает текущую станцию, затем на эту же
+  // станцию заходит следующий стрелок. Только после последнего
+  // стрелка вся группа переходит на следующую станцию.
+  shotIndex++;
+  if (shotIndex >= stationPlan[stationIndex].shots.length) {
+    shotIndex = 0;
+    shooterIndex++;
+
+    if (shooterIndex >= shooters.length) {
+      shooterIndex = 0;
+      stationIndex++;
+
+      if (stationIndex >= stationPlan.length) {
+        finish();
+        return;
+      }
+    }
+  }
+  render();
+}
+function undo() {
+  if (!history.length) return;
+  const last = history.pop();
+  const r = results[last.shooterIndex];
+  r.shots--;
+  if (last.hit) r.hit--; else r.miss--;
+  delete r.marks[`${last.stationIndex}-${last.shotIndex}`];
+  shooterIndex = last.shooterIndex;
+  stationIndex = last.stationIndex;
+  shotIndex = last.shotIndex;
+  render();
+}
+
+function finish() {
+  document.getElementById('shoot').style.display = 'none';
+  document.getElementById('result').style.display = 'block';
+  document.getElementById('modeBadge').textContent = 'Серия завершена';
+
+  const totalHit = results.reduce((s,r) => s+r.hit, 0);
+  const total = results.reduce((s,r) => s+r.shots, 0);
+  document.getElementById('resultSub').textContent =
+    `${shooters.length} ${shooters.length === 1 ? 'стрелок' : 'стрелков'} · ${total} выстрелов`;
+  document.getElementById('score').textContent = `${totalHit} / ${total}`;
+
+  const box = document.getElementById('summary');
+  box.innerHTML = '';
+  results.forEach((r, i) => {
+    const div = document.createElement('div');
+    div.innerHTML = `<span>${i+1}. ${escapeHtml(r.name)}</span><strong>${r.hit} / ${r.shots}</strong>`;
+    box.appendChild(div);
+  });
+}
+
+function restart() {
+  document.getElementById('shoot').style.display = 'none';
+  document.getElementById('result').style.display = 'none';
+  document.getElementById('setup').style.display = 'block';
+  document.getElementById('modeBadge').textContent = 'Настройка серии';
+}
+
+function escapeHtml(str) {
+  return str.replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'
+  }[c]));
+}
+</script>
+</body>
+</html>
